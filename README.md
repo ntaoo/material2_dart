@@ -1,5 +1,7 @@
 # Material Design for Angular 2
 
+[![Join the chat at https://gitter.im/ntaoo/material2_dart](https://badges.gitter.im/ntaoo/material2_dart.svg)](https://gitter.im/ntaoo/material2_dart?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 It is [angular/material2](https://github.com/angular/material2) for Dart.
 
 [![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg?maxAge=2592000)](https://gitter.im/ntaoo/material2_dart)
