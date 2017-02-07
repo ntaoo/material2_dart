@@ -1,12 +1,5 @@
 import "../errors/error.dart";
 
-/** Exception thrown when a ComponentPortal is attached to a DomPortalHost without an origin. */
-class MdComponentPortalAttachedToDomWithoutOriginError extends MdError {
-  MdComponentPortalAttachedToDomWithoutOriginError()
-      : super(
-            "A ComponentPortal must have an origin set when attached to a DomPortalHost because the DOM element is not part of the Angular application context.");
-}
-
 /** Exception thrown when attempting to attach a null portal to a host. */
 class MdNullPortalError extends MdError {
   MdNullPortalError() : super("Must provide a portal to attach");

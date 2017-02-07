@@ -1,7 +1,8 @@
 import 'dart:html';
+import 'dart:svg' as svg;
 import 'dart:async';
 import 'dart:math' as math;
-import "package:angular2/core.dart";
+import "package:angular2/angular2.dart";
 // TODO(josephperrott): Benchpress tests.
 
 /// A single degree in radians.
@@ -17,6 +18,11 @@ const num _startIndeterminate = 3;
 
 /// End animation value of the indeterminate animation
 const num _endIndeterminate = 80;
+
+/// Maximum angle for the arc.
+///
+/// The angle can't be exactly 360, because the arc becomes hidden.
+const num _maxAngle = 359.99 / 100;
 
 enum _ProgressCircleMode { determinate, indeterminate }
 
@@ -38,12 +44,17 @@ typedef num _EasingFn(
     changeDetection: ChangeDetectionStrategy.OnPush)
 class MdProgressCircle implements OnDestroy {
   ChangeDetectorRef _changeDetectorRef;
+  NgZone _ngZone;
+  ElementRef _elementRef;
 
-  /** The id of the last requested animation. */
+  /// The id of the last requested animation.
   num _lastAnimationId = 0;
 
-  /** The Timer of the indeterminate interval. */
+  /// The Timer of the indeterminate interval.
   Timer _interdeterminateInterval;
+
+  /// The SVG <path> node that is used to draw the circle.
+  svg.PathElement _path;
 
   /**
    * Values for aria max and min are only defined as numbers when in a determinate mode.  We do this
@@ -60,18 +71,6 @@ class MdProgressCircle implements OnDestroy {
   set interdeterminateInterval(Timer interval) {
     _interdeterminateInterval?.cancel();
     _interdeterminateInterval = interval;
-  }
-
-  /** The current path value, representing the progress circle. */
-  String _currentPath;
-
-  String get currentPath => _currentPath;
-
-  set currentPath(String path) {
-    _currentPath = path;
-    // Mark for check as our ChangeDetectionStrategy is OnPush, when changes come from within the
-    // component, change detection must be called for.
-    _changeDetectorRef.markForCheck();
   }
 
   // Clean up any animations that were running.
@@ -134,7 +133,7 @@ class MdProgressCircle implements OnDestroy {
 
   _ProgressCircleMode _mode = _ProgressCircleMode.determinate;
 
-  MdProgressCircle(this._changeDetectorRef);
+  MdProgressCircle(this._changeDetectorRef, this._ngZone, this._elementRef);
 
   /**
    * Animates the circle from one percentage value to another.
@@ -153,11 +152,13 @@ class MdProgressCircle implements OnDestroy {
 
     // No need to animate it if the values are the same
     if (animateTo == animateFrom) {
-      currentPath = _getSvgArc(animateTo, rotation);
+      _renderArc(animateTo, animateFrom);
     } else {
-      window.animationFrame.then/*<num>*/((num _) {
-        _animation(id, startTime, animateFrom, changeInValue, duration,
-            rotation, ease);
+      _ngZone.runOutsideAngular(() {
+        window.animationFrame.then/*<num>*/((num _) {
+          _animation(id, startTime, animateFrom, changeInValue, duration,
+              rotation, ease);
+        });
       });
     }
   }
@@ -166,10 +167,10 @@ class MdProgressCircle implements OnDestroy {
       num duration, num rotation, _EasingFn ease) {
     var currentTime = _now();
     num elapsedTime = math.max(0, math.min(currentTime - startTime, duration));
-    currentPath = _getSvgArc(
+    _renderArc(
         ease(elapsedTime, animateFrom, changeInValue, duration), rotation);
     // Prevent overlapping animations by checking if a new animation has been called for and
-    // if the animation has lasted long than the animation duration.
+    // if the animation has lasted longer than the animation duration.
     if (id == _lastAnimationId && elapsedTime < duration) {
       window.animationFrame.then/*<num>*/((num _) {
         _animation(id, startTime, animateFrom, changeInValue, duration,
@@ -192,18 +193,36 @@ class MdProgressCircle implements OnDestroy {
       start = -end;
       end = -temp;
     };
+
     if (interdeterminateInterval == null) {
-      interdeterminateInterval = new Timer.periodic(
-          new Duration(milliseconds: duration.toInt() + 50), (_) => animate);
-      animate();
+      _ngZone.runOutsideAngular(() {
+        interdeterminateInterval = new Timer.periodic(
+            new Duration(milliseconds: duration.toInt() + 50), (_) => animate);
+        animate();
+      });
     }
   }
 
-  /**
-   * Removes interval, ending the animation.
-   */
+  /// Removes interval, ending the animation.
   void _cleanupIndeterminateAnimation() {
     interdeterminateInterval = null;
+  }
+
+  /// Renders the arc onto the SVG element. Proxies `getArc`
+  /// while setting the proper DOM attribute on the `<path>`.
+  void _renderArc(num currentValue, num rotation) {
+    // Caches the path reference so it doesn't have to be looked up every time.
+    svg.PathElement path;
+    if (_path == null) {
+      path = _elementRef.nativeElement.querySelector('path');
+    } else {
+      path = _path;
+    }
+    // Ensure that the path was found. This may not be the case if the
+    // animation function fires too early.
+    if (path != null) {
+      path.attributes['d'] = _getSvgArc(currentValue, rotation);
+    }
   }
 }
 
@@ -219,7 +238,9 @@ class MdProgressCircle implements OnDestroy {
     templateUrl: "progress_circle.html",
     styleUrls: const ["progress_circle.scss.css"])
 class MdSpinner extends MdProgressCircle {
-  MdSpinner(ChangeDetectorRef changeDetectorRef) : super(changeDetectorRef) {
+  MdSpinner(
+      ChangeDetectorRef changeDetectorRef, ElementRef elementRef, NgZone ngZone)
+      : super(changeDetectorRef, ngZone, elementRef) {
     mode = "indeterminate";
   }
 }
@@ -279,13 +300,12 @@ num _materialEase(
  *    percentage value provided.
  */
 String _getSvgArc(num currentValue, num rotation) {
-  // The angle can't be exactly 360, because the arc becomes hidden.
-  var maximumAngle = 359.99 / 100;
   var startPoint = rotation ?? 0;
   var radius = 50;
   var pathRadius = 40;
-  var startAngle = startPoint * maximumAngle;
-  var endAngle = currentValue * maximumAngle;
+
+  var startAngle = startPoint * _maxAngle;
+  var endAngle = currentValue * _maxAngle;
   var start = _polarToCartesian(radius, pathRadius, startAngle);
   var end = _polarToCartesian(radius, pathRadius, endAngle + startAngle);
   var arcSweep = endAngle < 0 ? 0 : 1;

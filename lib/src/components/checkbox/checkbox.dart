@@ -1,7 +1,7 @@
 import 'dart:html';
-import "package:angular2/core.dart";
+import "package:angular2/angular2.dart";
 import "package:angular2/common.dart";
-import "../../core/core.dart" show booleanFieldValue;
+import "../../core/core.dart" show coerceBooleanProperty, MD_RIPPLE_DIRECTIVES;
 
 /// Monotonically increasing integer used to auto-generate unique ids for checkbox components.
 int _nextId = 0;
@@ -52,6 +52,7 @@ class MdCheckboxChange {
       "[class.md-checkbox-focused]": "hasFocus"
     },
     providers: const [MD_CHECKBOX_CONTROL_VALUE_ACCESSOR],
+    directives: const [MD_RIPPLE_DIRECTIVES],
     encapsulation: ViewEncapsulation.None,
     changeDetection: ChangeDetectionStrategy.OnPush)
 class MdCheckbox implements ControlValueAccessor<dynamic> {
@@ -70,32 +71,43 @@ class MdCheckbox implements ControlValueAccessor<dynamic> {
   @Input("aria-labelledby")
   String ariaLabelledby;
 
-  /** A unique id for the checkbox. If one is not supplied, it is auto-generated. */
+  /// A unique id for the checkbox. If one is not supplied, it is auto-generated.
   @Input()
   String id = 'md-checkbox-${++_nextId}';
+
+  /// Whether the ripple effect on click should be disabled.
+  bool _disableRipple = false;
+  bool get disableRipple => _disableRipple;
+  @Input()
+  set disableRipple(dynamic value) {
+    _disableRipple = coerceBooleanProperty(value);
+  }
 
   /** ID to be applied to the `input` element */
   String get inputId => 'input-$id';
 
   @Input()
   set required(dynamic v) {
-    _required = booleanFieldValue(v);
+    _required = coerceBooleanProperty(v);
   }
 
   bool get required => _required;
   bool _required = false;
 
-  /** Whether or not the checkbox should come before or after the label. */
+  /// Whether or not the checkbox should come before or after the label.
   // 'start' | 'end'
   @Input()
   String align = "start";
 
-  /**
-   * Whether the checkbox is disabled. When the checkbox is disabled it cannot be interacted with.
-   * The correct ARIA attributes are applied to denote this to assistive technology.
-   */
+  /// Whether the checkbox is disabled. When the checkbox is disabled it cannot be interacted with.
+  /// The correct ARIA attributes are applied to denote this to assistive technology.
   @Input()
-  bool disabled = false;
+  set disabled(dynamic disabled) {
+    _disabled = coerceBooleanProperty(disabled);
+  }
+
+  bool get disabled => _disabled;
+  bool _disabled = false;
 
   /**
    * The tabindex attribute for the checkbox. Note that when the checkbox is disabled, the attribute
@@ -119,6 +131,20 @@ class MdCheckbox implements ControlValueAccessor<dynamic> {
   TransitionCheckState _currentCheckState = TransitionCheckState.Init;
   bool _checked = false;
   bool _indeterminate = false;
+
+  String _color = 'accent';
+  String get color => _color;
+
+  /// Sets the color of the checkbox.
+  @Input()
+  set color(String newColor) {
+    if (color != null && color.isNotEmpty)
+      _nativeElement.classes.remove('md-$_color');
+    if (newColor != null && newColor.isNotEmpty)
+      _nativeElement.classes.add('md-$newColor');
+    _color = newColor;
+  }
+
   // TODO: Its argument type can be narrower.
   Function _controlValueAccessorChangeFn = (dynamic value) {};
   bool hasFocus = false;
@@ -161,6 +187,10 @@ class MdCheckbox implements ControlValueAccessor<dynamic> {
           ? TransitionCheckState.Checked
           : TransitionCheckState.Unchecked);
     }
+  }
+
+  bool isRippleDisabled() {
+    return disableRipple || disabled;
   }
 
   /// Implemented as part of ControlValueAccessor.
@@ -296,6 +326,8 @@ class MdCheckbox implements ControlValueAccessor<dynamic> {
     }
     return 'md-checkbox-anim-$animSuffix';
   }
+
+  Element getHostElement() => _nativeElement;
 }
 
 const List MD_CHECKBOX_DIRECTIVES = const [MdCheckbox];

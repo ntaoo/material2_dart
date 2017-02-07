@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:angular2/core.dart';
+import 'package:angular2/angular2.dart';
 import "package:angular2/testing_internal.dart";
 import 'package:material2_dart/src/components/list/list.dart';
 @TestOn('browser')

@@ -1,6 +1,12 @@
 import 'dart:html';
 import 'dart:async';
-import "package:angular2/core.dart";
+import "package:angular2/angular2.dart";
+import 'interactivity_checker.dart';
+
+const List a11yProviders = const <dynamic>[
+  MdLiveAnnouncer,
+  InteractivityChecker
+];
 
 const OpaqueToken LIVE_ANNOUNCER_ELEMENT_TOKEN =
     const OpaqueToken("mdLiveAnnouncerElement");
@@ -32,6 +38,11 @@ class MdLiveAnnouncer {
     new Future<Null>.delayed(const Duration(milliseconds: 100), () {
       _liveElement.text = message;
     });
+  }
+
+  /// Removes the aria-live element from the DOM.
+  void _removeLiveElement() {
+    _liveElement?.remove();
   }
 
   Element _createLiveElement() {

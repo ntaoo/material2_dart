@@ -1,4 +1,4 @@
-:host {
+md-slide-toggle {
   display: flex;
   height: 24px;
   margin: 16px 0;
@@ -6,9 +6,9 @@
   white-space: nowrap;
   user-select: none;
   outline: none; }
-  :host.md-checked .md-slide-toggle-thumb-container {
+  md-slide-toggle.md-checked .md-slide-toggle-thumb-container {
     transform: translate3d(100%, 0, 0); }
-  :host .md-ink-ripple {
+  md-slide-toggle .md-ink-ripple {
     border-radius: 50%;
     opacity: 0;
     height: 48px;
@@ -20,11 +20,11 @@
     transform: translate(-50%, -50%);
     transition: opacity ease 280ms, background-color ease 280ms;
     width: 48px; }
-  :host.md-slide-toggle-focused .md-ink-ripple {
+  md-slide-toggle.md-slide-toggle-focused .md-ink-ripple {
     opacity: 1; }
-  :host.md-slide-toggle-disabled .md-ink-ripple {
+  md-slide-toggle.md-slide-toggle-disabled .md-ink-ripple {
     background-color: #000; }
-  :host.md-disabled .md-slide-toggle-label, :host.md-disabled .md-slide-toggle-container {
+  md-slide-toggle.md-disabled .md-slide-toggle-label, md-slide-toggle.md-disabled .md-slide-toggle-container {
     cursor: default; }
 
 .md-slide-toggle-content {
@@ -42,8 +42,10 @@
   width: 36px;
   height: 24px;
   position: relative;
-  user-select: none;
   margin-right: 8px; }
+  [dir='rtl'] .md-slide-toggle-container {
+    margin-left: 8px;
+    margin-right: 0; }
 
 .md-slide-toggle-thumb-container {
   position: absolute;

@@ -1,8 +1,8 @@
 import 'dart:html';
 import "dart:async";
-import "package:angular2/core.dart";
+import "package:angular2/angular2.dart";
 import "portal.dart";
-import "portal_errors.dart";
+//import "portal_errors.dart";
 
 /// A PortalHost for attaching portals to an arbitrary DOM element outside
 /// of the Angular application context.
@@ -10,23 +10,63 @@ import "portal_errors.dart";
 class DomPortalHost extends BasePortalHost {
   Element _hostDomElement;
   ComponentResolver _componentResolver;
-
-  DomPortalHost(this._hostDomElement, this._componentResolver);
+  ApplicationRef _appRef;
+  Injector _defaultInjector;
+  DomPortalHost(this._hostDomElement, this._componentResolver, this._appRef,
+      this._defaultInjector)
+      : super();
 
   /// Attach the given ComponentPortal to DOM element using the ComponentResolver.
   @override
   Future<ComponentRef> attachComponentPortal(ComponentPortal portal) async {
-    if (portal.viewContainerRef == null) {
-      throw new MdComponentPortalAttachedToDomWithoutOriginError();
-    }
     var componentFactory =
         await _componentResolver.resolveComponent(portal.component);
-    var ref = portal.viewContainerRef.createComponent(componentFactory,
-        portal.viewContainerRef.length, portal.injector ?? portal.viewContainerRef.parentInjector);
-    var hostView = (ref.hostView as EmbeddedViewRef);
-    _hostDomElement.append(hostView.rootNodes[0] as Node);
-    setDisposeFn(() => ref.destroy());
-    return ref;
+    ComponentRef componentRef;
+
+    // If the portal specifies a ViewContainerRef, we will use that as the attachment point
+    // for the component (in terms of Angular's component tree, not rendering).
+    // When the ViewContainerRef is missing, we use the factory to create the component directly
+    // and then manually attach the ChangeDetector for that component to the application (which
+    // happens automatically when using a ViewContainer).
+    if (portal.viewContainerRef != null) {
+      componentRef = portal.viewContainerRef.createComponent(
+          componentFactory,
+          portal.viewContainerRef.length,
+          portal.injector != null
+              ? portal.injector
+              : portal.viewContainerRef.parentInjector);
+
+      setDisposeFn(() => componentRef.destroy());
+    } else {
+      componentRef = componentFactory
+          .create(portal.injector != null ? portal.injector : _defaultInjector);
+
+      // When creating a component outside of a ViewContainer, we need to manually register
+      // its ChangeDetector with the application. This API is unfortunately not yet published
+      // in Angular core. The change detector must also be deregistered when the component
+      // is destroyed to prevent memory leaks.
+      //
+      // See https://github.com/angular/angular/pull/12674
+      // TODO(ntaoo): Dart version will fail. Consider the workaround.
+      var changeDetectorRef = componentRef.changeDetectorRef;
+      (_appRef as dynamic).registerChangeDetector(changeDetectorRef);
+
+      setDisposeFn(() {
+        (_appRef as dynamic).unregisterChangeDetector(changeDetectorRef);
+
+        // Normally the ViewContainer will remove the component's nodes from the DOM.
+        // Without a ViewContainer, we need to manually remove the nodes.
+        _getComponentRootNode(componentRef).remove();
+
+        componentRef.destroy();
+      });
+    }
+
+    // At this point the component has been instantiated, so we move it to the location in the DOM
+    // where we want it to be rendered.
+    _hostDomElement.append(_getComponentRootNode(componentRef));
+
+    return componentRef;
   }
 
   @override
@@ -47,5 +87,10 @@ class DomPortalHost extends BasePortalHost {
   void dispose() {
     super.dispose();
     if (_hostDomElement.parentNode != null) _hostDomElement.remove();
+  }
+
+  /// Gets the root HTMLElement for an instantiated component.
+  Element _getComponentRootNode(ComponentRef componentRef) {
+    return (componentRef.hostView as EmbeddedViewRef).rootNodes[0] as Element;
   }
 }

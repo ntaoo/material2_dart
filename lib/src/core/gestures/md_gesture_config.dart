@@ -1,6 +1,6 @@
 //import 'dart:html';
 
-//import "package:angular2/core.dart";
+//import "package:angular2/angular2.dart";
 //import "package:angular2/src/platform/browser_common.dart";
 
 /// FIXME: It looks like GestureConfig is not supported in Angular2 Dart beta-17.

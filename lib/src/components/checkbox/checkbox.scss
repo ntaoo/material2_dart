@@ -1,4 +1,5 @@
 @import '../../core/theming/theming';
+@import '../../core/style/elevation';
 @import '../../core/style/variables';
 @import '../../core/ripple/ripple';
 
@@ -17,6 +18,9 @@ $md-checkbox-item-spacing: $md-toggle-padding;
 // Manual calculation done on SVG
 $_md-checkbox-mark-path-length: 22.910259;
 $_md-checkbox-indeterminate-checked-easing-function: cubic-bezier(0.14, 0, 0, 1);
+
+// The ripple size of the checkbox
+$md-checkbox-ripple-size: 15px;
 
 // Fades in the background of the checkbox when it goes from unchecked -> {checked,indeterminate}.
 @keyframes md-checkbox-fade-in-background {
@@ -189,6 +193,10 @@ $_md-checkbox-indeterminate-checked-easing-function: cubic-bezier(0.14, 0, 0, 1)
 
 md-checkbox {
   cursor: pointer;
+
+  // Animation
+  transition: background $swift-ease-out-duration $swift-ease-out-timing-function,
+              md-elevation-transition-property-value();
 }
 
 .md-checkbox-layout {
@@ -196,6 +204,7 @@ md-checkbox {
   // (e.g. pointer by default, regular when disabled), instead of the browser default.
   cursor: inherit;
   align-items: baseline;
+  vertical-align: middle;
   display: inline-flex;
 }
 
@@ -210,7 +219,8 @@ md-checkbox {
   vertical-align: middle;
   white-space: nowrap;
   width: $md-checkbox-size;
-
+  flex-shrink: 0;
+  
   [dir='rtl'] & {
     margin: {
       left: $md-checkbox-item-spacing;
@@ -409,4 +419,13 @@ md-checkbox {
   left: 50%;
 }
 
-@include md-temporary-ink-ripple(checkbox);
+.md-checkbox-ripple {
+  position: absolute;
+  left: -$md-checkbox-ripple-size;
+  top: -$md-checkbox-ripple-size;
+  right: -$md-checkbox-ripple-size;
+  bottom: -$md-checkbox-ripple-size;
+  border-radius: 50%;
+  z-index: 1;
+  pointer-events: none;
+}

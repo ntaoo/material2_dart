@@ -1,9 +1,8 @@
 import 'dart:html';
 import 'dart:math' as math;
-import 'package:angular2/core.dart';
+import 'package:angular2/angular2.dart';
 import 'package:angular2/common.dart';
-import '../../core/core.dart'
-    show booleanFieldValue, applyCssTransform, numFieldValue;
+import '../../core/core.dart' show coerceBooleanProperty, coerceNumberProperty;
 
 /// Visually, a 30px separation between tick marks looks best.
 /// This is very subjective but it is the default separation we chose.
@@ -16,38 +15,52 @@ const Provider MD_SLIDER_VALUE_ACCESSOR =
 
 typedef void _ControlValueAccessorChangeFn(dynamic value);
 
+/// A simple change event emitted by the MdSlider component.
+class MdSliderChange {
+  MdSlider source;
+  num value;
+}
+
 @Component(
   selector: 'md-slider',
   providers: const [MD_SLIDER_VALUE_ACCESSOR],
   host: const {
-    'tabindex': '0',
-    '(click)': r'onClick($event)',
-    '(slide)': r'onSlide($event)',
-    '(slidestart)': r'onSlideStart($event)',
-    '(slideend)': 'onSlideEnd()',
-    '(resize)': 'onResize()',
     '(blur)': 'onBlur()',
+    '(click)': r'onClick($event)',
+    '(mouseenter)': 'onMouseenter()',
+    '(slide)': r'onSlide($event)',
+    '(slideend)': 'onSlideEnd()',
+    '(slidestart)': r'onSlideStart($event)',
+    'tabindex': '0',
+    '[attr.aria-disabled]': 'disabled',
+    '[attr.aria-valuemax]': 'max',
+    '[attr.aria-valuemin]': 'min',
+    '[attr.aria-valuenow]': 'value',
+    '[class.md-slider-active]': 'isActive',
+    '[class.md-slider-disabled]': 'disabled',
+    '[class.md-slider-has-ticks]': 'tickInterval',
+    '[class.md-slider-sliding]': 'isSliding',
+    '[class.md-slider-thumb-label-showing]': 'thumbLabel',
   },
   templateUrl: 'slider.html',
   styleUrls: const ['slider.scss.css'],
   encapsulation: ViewEncapsulation.None,
 )
-class MdSlider implements AfterContentInit, ControlValueAccessor<dynamic> {
+class MdSlider implements ControlValueAccessor<dynamic> {
   /// A renderer to handle updating the slider's thumb and fill track.
   SliderRenderer _renderer;
 
   /// The dimensions of the slider.
   Rectangle _sliderDimensions;
 
+  /// Whether or not the slider is disabled.
   bool _disabled = false;
 
-  @HostBinding('class.md-slider-disabled')
-  @HostBinding('attr.aria-disabled')
   bool get disabled => _disabled;
 
   @Input()
   set disabled(dynamic value) {
-    _disabled = booleanFieldValue(value);
+    _disabled = coerceBooleanProperty(value);
   }
 
   bool _thumbLabel = false;
@@ -57,54 +70,17 @@ class MdSlider implements AfterContentInit, ControlValueAccessor<dynamic> {
   /// Whether or not to show the thumb label.
   @Input('thumb-label')
   set thumbLabel(dynamic value) {
-    _thumbLabel = booleanFieldValue(value);
+    _thumbLabel = coerceBooleanProperty(value);
   }
-
-  /// The miniumum value that the slider can have.
-  num _min = 0;
-
-  /// The percentage of the slider that coincides with the value. */
-  num _percent = 0;
 
   _ControlValueAccessorChangeFn _controlValueAccessorChangeFn =
       (dynamic value) {};
 
+  /// The last value for which a change event was emitted.
+  num _lastEmittedValue;
+
   /// onTouch function registered via registerOnTouch (ControlValueAccessor).
   Function onTouched = () {};
-
-  num _step = 1;
-
-  num get step => _step;
-
-  /// The values at which the thumb will snap.
-  @Input()
-  set step(dynamic value) {
-    _step = numFieldValue(value);
-  }
-
-  dynamic _tickInterval = 0;
-
-  /// 'auto' | num
-  dynamic get tickInterval => _tickInterval;
-
-  /// How often to show ticks. Relative to the step so that a tick always appears on a step.
-  /// Ex: Tick interval of 4 with a step of 3 will draw a tick every 4 steps (every 12 values).
-  @Input('tick-interval')
-  set tickInterval(dynamic value) {
-    if (value == null) {
-      _tickInterval = 0;
-    } else if (value is num) {
-      _tickInterval = value;
-    } else if (value is String) {
-      if (value == 'auto') {
-        _tickInterval = value;
-      } else {
-        _tickInterval = numFieldValue(value);
-      }
-    } else {
-      throw new ArgumentError.value(value);
-    }
-  }
 
   /// Whether or not the thumb is sliding.
   /// Used to determine if there should be a transition for the thumb and fill track.
@@ -114,73 +90,111 @@ class MdSlider implements AfterContentInit, ControlValueAccessor<dynamic> {
   /// Used to shrink and grow the thumb as according to the Material Design spec.
   bool isActive = false;
 
-  /// Indicator for if the value has been set or not.
-  bool _isInitialized = false;
+  num _step = 1;
 
-  /// Value of the slider.
-  num _value = 0;
-
-  @HostBinding('attr.aria-valuemin')
-  num get min => _min;
+  num get step => _step;
 
   @Input()
-  set min(dynamic value) {
-    _min = numFieldValue(value);
-    // If the value wasn't explicitly set by the user, set it to the min.
-    if (!_isInitialized) {
-      this.value = _min;
+  set step(dynamic value) {
+    _step = coerceNumberProperty(value, _step);
+  }
+
+  /**
+   * How often to show ticks. Relative to the step so that a tick always appears on a step.
+   * Ex: Tick interval of 4 with a step of 3 will draw a tick every 4 steps (every 12 values).
+   */
+  dynamic _tickInterval = 0;
+  dynamic get tickInterval => _tickInterval;
+
+  @Input('tick-interval')
+  set tickInterval(dynamic /*num | 'auto'*/ v) {
+    if (v is String && v == 'auto') {
+      _tickInterval = v;
+    } else {
+      _tickInterval = coerceNumberProperty(v, _tickInterval);
     }
   }
 
-  num _max = 100;
+  /// The size of a tick interval as a percentage of the size of the track.
+  num _tickIntervalPercent = 0;
+
+  num get tickIntervalPercent => _tickIntervalPercent;
+
+  /// The percentage of the slider that coincides with the value.
+  num _percent = 0;
+
+  num get percent => _clamp(_percent);
+
+  /// Value of the slider.
+  num _value;
+
+  num get value {
+    // If the value needs to be read and it is still uninitialized, initialize it to the min.
+    if (_value == null) {
+      value = _min;
+    }
+    return _value;
+  }
+
+  @Input()
+  set value(num v) {
+    // TODO(ntaoo): maybe _value?
+    _value = coerceNumberProperty(v, _value);
+    _percent = _calculatePercentage(_value);
+  }
+
+  /// The miniumum value that the slider can have.
+  num _min = 0;
+
+  num get min => _min;
+
+  @Input()
+  set min(dynamic v) {
+    _min = coerceNumberProperty(v, _min);
+    // If the value wasn't explicitly set by the user, set it to the min.
+    if (_value == null) value = _min;
+    _percent = _calculatePercentage(value);
+  }
 
   /// The maximum value that the slider can have.
-  @HostBinding('attr.aria-valuemax')
+  num _max = 100;
+
   num get max => _max;
 
   @Input()
   set max(dynamic value) {
-    _max = numFieldValue(value);
+    _max = coerceNumberProperty(value, _max);
+    _percent = _calculatePercentage(_value);
   }
 
-  @HostBinding('attr.aria-valuenow')
-  num get value => _value;
+  String get trackFillFlexBasis => '${percent * 100}%';
+  String get ticksMarginLeft => '${tickIntervalPercent / 2 * 100}%';
+  String get ticksContainerMarginLeft => '-$ticksMarginLeft';
+  String get ticksBackgroundSize => '${tickIntervalPercent * 100}% 2px';
 
-  // String | num
-  @Input()
-  set value(dynamic value) {
-    if (value != null) {
-      this._value = numFieldValue(value);
-      _isInitialized = true;
-      _controlValueAccessorChangeFn(this._value);
-    }
-  }
+  @Output()
+  EventEmitter<MdSliderChange> change = new EventEmitter<MdSliderChange>();
 
   MdSlider(ElementRef elementRef)
       : this._renderer = new SliderRenderer(elementRef);
 
-  /// Once the slider has rendered, grab the dimensions
-  /// and update the position of the thumb and fill track.
-  @override
-  void ngAfterContentInit() {
+  void onMouseenter() {
+    if (disabled) return;
+
+    // We save the dimensions of the slider here so we can use them to update the spacing of the
+    // ticks and determine where on the slider click and slide events happen.
     _sliderDimensions = _renderer.getSliderDimensions();
-    // This needs to be called after content init because the value can be set to the min if the
-    // value itself isn't set. If this happens, the control value accessor needs to be updated.
-    _controlValueAccessorChangeFn(value);
-    snapThumbToValue();
-    _updateTickSeparation();
+    _updateTickIntervalPercent();
   }
 
   void onClick(MouseEvent event) {
-    if (disabled) {
-      return;
-    }
+    if (disabled) return;
 
     isActive = true;
     isSliding = false;
     _renderer.addFocus();
-    updateValueFromPosition(event.client.x);
-    snapThumbToValue();
+    _updateValueFromPosition(event.client.x);
+    _emitValueIfChanged();
   }
 
   // FIXME: Blocked by Hammer not being ported.
@@ -209,14 +223,7 @@ class MdSlider implements AfterContentInit, ControlValueAccessor<dynamic> {
 
   void onSlideEnd() {
     isSliding = false;
-    snapThumbToValue();
-  }
-
-  void onResize() {
-    isSliding = true;
-    _sliderDimensions = _renderer.getSliderDimensions();
-    // Skip updating the value and position as there is no new placement.
-    _renderer.updateThumbAndFillPosition(_percent, _sliderDimensions.width);
+    _emitValueIfChanged();
   }
 
   void onBlur() {
@@ -224,105 +231,65 @@ class MdSlider implements AfterContentInit, ControlValueAccessor<dynamic> {
     onTouched();
   }
 
-  /// When the value changes without a physical position, the percentage needs to be recalculated
-  /// independent of the physical location.
-  /// This is also used to move the thumb to a snapped value once sliding is done.
-  void updatePercentFromValue() {
-    _percent = calculatePercentage(value);
-  }
-
   /// Calculate the new value from the new physical location.
   /// The value will always be snapped.
-  void updateValueFromPosition(num pos) {
+  void _updateValueFromPosition(num pos) {
+    if (_sliderDimensions == null) return;
+
     num offset = _sliderDimensions.left;
     num size = _sliderDimensions.width;
 
     // The exact value is calculated from the event and used to find the closest snap value.
-    _percent = clamp((pos - offset) / size);
-    var exactValue = calculateValue(_percent);
+    _percent = _clamp((pos - offset) / size);
+    var exactValue = _calculateValue(percent);
 
     // This calculation finds the closest step by finding the closest whole number divisible by the
     // step relative to the min.
     num closestValue = ((exactValue - min) / step).round() * step + min;
     // The value needs to snap to the min and max.
-    value = clamp(closestValue, min, max);
-    _renderer.updateThumbAndFillPosition(_percent, _sliderDimensions.width);
+    value = _clamp(closestValue, min, max);
   }
 
-  /// Snaps the thumb to the current value.
-  /// Called after a click or drag event is over.
-  void snapThumbToValue() {
-    updatePercentFromValue();
-    _renderer.updateThumbAndFillPosition(_percent, _sliderDimensions.width);
-  }
-
-  /// Calculates the separation in pixels of tick marks. If there is no tick interval or the interval
-  /// is set to something other than a number or 'auto', nothing happens.
-  void _updateTickSeparation() {
-    if (_tickInterval == 'auto') {
-      _updateAutoTickSeparation();
-    } else {
-      _updateTickSeparationFromInterval();
+  /// Emits a change event if the current value is different from the last emitted value.
+  void _emitValueIfChanged() {
+    if (value != _lastEmittedValue) {
+      var event = new MdSliderChange()
+        ..source = this
+        ..value = value;
+      change.emit(event);
+      _controlValueAccessorChangeFn(value);
+      _lastEmittedValue = value;
     }
   }
 
-  /**
-   * Calculates the optimal separation in pixels of tick marks based on the minimum auto tick
-   * separation constant.
-   */
-  void _updateAutoTickSeparation() {
-    // We're looking for the multiple of step for which the separation between is greater than the
-    // minimum tick separation.
-    num sliderWidth = _sliderDimensions.width;
+  /// Updates the amount of space between ticks as a percentage of the width of the slider.
+  void _updateTickIntervalPercent() {
+    if (tickInterval == null) return;
 
-    // This is the total "width" of the slider in terms of values.
-    num valueWidth = max - min;
-
-    // Calculate how many values exist within 1px on the slider.
-    num valuePerPixel = valueWidth / sliderWidth;
-
-    // Calculate how many values exist in the minimum tick separation (px).
-    num valuePerSeparation = valuePerPixel * MIN_AUTO_TICK_SEPARATION;
-
-    // Calculate how many steps exist in this separation. This will be the lowest value you can
-    // multiply step by to get a separation that is greater than or equal to the minimum tick
-    // separation.
-    int stepsPerSeparation = (valuePerSeparation / step).ceil();
-
-    // Get the percentage of the slider for which this tick would be located so we can then draw
-    // it on the slider.
-    num tickPercentage = calculatePercentage((step * stepsPerSeparation) + min);
-
-    // The pixel value of the tick is the percentage * the width of the slider. Use this to draw
-    // the ticks on the slider.
-    _renderer.drawTicks(sliderWidth * tickPercentage);
-  }
-
-  /// Calculates the separation of tick marks by finding the pixel value of the tickInterval.
-  void _updateTickSeparationFromInterval() {
-    assert(_tickInterval is num);
-    // Calculate the first value a tick will be located at by getting the step at which the interval
-    // lands and adding that to the min.
-    num tickValue = (step * _tickInterval) + min;
-
-    // The percentage of the step on the slider is needed in order to calculate the pixel offset
-    // from the beginning of the slider. This offset is the tick separation.
-    num tickPercentage = calculatePercentage(tickValue);
-    _renderer.drawTicks(_sliderDimensions.width * tickPercentage);
+    if (tickInterval == 'auto') {
+      var pixelsPerStep = _sliderDimensions.width * step / (max - min);
+      var stepsPerTick = (MIN_AUTO_TICK_SEPARATION / pixelsPerStep).ceil();
+      var pixelsPerTick = stepsPerTick * step;
+      _tickIntervalPercent = pixelsPerTick / _sliderDimensions.width;
+    } else {
+      _tickIntervalPercent = tickInterval * step / (max - min);
+    }
   }
 
   /// Calculates the percentage of the slider that a value is.
-  num calculatePercentage(num value) {
+  num _calculatePercentage(num value) {
+    // Since (null - num) == (0 - num) on JS/TS.
+    if (value == null) value = 0;
     return (value - min) / (max - min);
   }
 
   /// Calculates the value a percentage of the slider corresponds to.
-  num calculateValue(num percentage) {
-    return min + (percentage * (max - min));
+  num _calculateValue(num percentage) {
+    return min + percentage * (max - min);
   }
 
   /// Return a number between two numbers.
-  num clamp(num value, [num min = 0, num max = 1]) {
+  num _clamp(num value, [num min = 0, num max = 1]) {
     return math.max(min, math.min(value, max));
   }
 
@@ -330,10 +297,6 @@ class MdSlider implements AfterContentInit, ControlValueAccessor<dynamic> {
   @override
   void writeValue(dynamic value) {
     this.value = value;
-
-    if (_sliderDimensions != null) {
-      snapThumbToValue();
-    }
   }
 
   /// Implemented as part of ControlValueAccessor.
@@ -346,6 +309,11 @@ class MdSlider implements AfterContentInit, ControlValueAccessor<dynamic> {
   @override
   void registerOnTouched(Function fn) {
     onTouched = fn;
+  }
+
+  /// Implemented as part of ControlValueAccessor.
+  void setDisabledState(bool isDisabled) {
+    disabled = isDisabled;
   }
 }
 
@@ -364,51 +332,10 @@ class SliderRenderer {
     return trackElement.getBoundingClientRect();
   }
 
-  /// Update the physical position of the thumb and fill track on the slider.
-  void updateThumbAndFillPosition(num percent, num width) {
-    // A container element that is used to avoid overwriting the transform on the thumb itself.
-    var thumbPositionElement =
-        _sliderElement.querySelector('.md-slider-thumb-position');
-    var fillTrackElement =
-        _sliderElement.querySelector('.md-slider-track-fill');
-
-    num position = (percent * width).round();
-
-    fillTrackElement.style.width = '${position}px';
-    applyCssTransform(thumbPositionElement, 'translateX(${position}px)');
-  }
-
   /// Focuses the native element.
   /// Currently only used to allow a blur event to fire but will be used with keyboard input later.
   void addFocus() {
     _sliderElement.focus();
-  }
-
-  /// Draws ticks onto the tick container.
-  void drawTicks(num tickSeparation) {
-    var tickContainer =
-        _sliderElement.querySelector('.md-slider-tick-container');
-    var tickContainerWidth = tickContainer.getBoundingClientRect().width;
-    // An extra element for the last tick is needed because the linear gradient cannot be told to
-    // always draw a tick at the end of the gradient. To get around this, there is a second
-    // container for ticks that has a single tick mark on the very right edge.
-    var lastTickContainer =
-        _sliderElement.querySelector('.md-slider-last-tick-container');
-    // Subtract 1 from the tick separation to center the tick.
-    // TODO: Evaluate the rendering performance of using repeating background gradients.
-    tickContainer.style.background =
-        'repeating-linear-gradient(to right, black, black 2px, ' +
-            'transparent 2px, transparent ${tickSeparation - 1}px)';
-    // Add a tick to the very end by starting on the right side and adding a 2px black line.
-    lastTickContainer.style.background =
-        'linear-gradient(to left, black, black 2px, transparent ' +
-            '2px, transparent)';
-
-    // If the second to last tick is too close (a separation of less than half the normal
-    // separation), don't show it by decreasing the width of the tick container element.
-    if (tickContainerWidth % tickSeparation < (tickSeparation / 2)) {
-      tickContainer.style.width = '${tickContainerWidth - tickSeparation}px';
-    }
   }
 }
 

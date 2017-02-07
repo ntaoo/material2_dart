@@ -1,9 +1,9 @@
 import 'dart:html';
 import 'dart:async';
 import 'dart:math';
-import "package:angular2/core.dart";
+import "package:angular2/angular2.dart";
 import "package:angular2/common.dart";
-import "../../core/core.dart" show booleanFieldValue, applyCssTransform;
+import "../../core/core.dart" show coerceBooleanProperty, applyCssTransform;
 
 const Provider MD_SLIDE_TOGGLE_VALUE_ACCESSOR =
     const Provider(NG_VALUE_ACCESSOR, useExisting: MdSlideToggle, multi: true);
@@ -29,6 +29,7 @@ int _nextId = 0;
     templateUrl: "slide_toggle.html",
     styleUrls: const ["slide_toggle.scss.css"],
     providers: const [MD_SLIDE_TOGGLE_VALUE_ACCESSOR],
+    encapsulation: ViewEncapsulation.None,
     changeDetection: ChangeDetectionStrategy.OnPush)
 class MdSlideToggle implements AfterContentInit, ControlValueAccessor<dynamic> {
   ElementRef _elementRef;
@@ -46,7 +47,7 @@ class MdSlideToggle implements AfterContentInit, ControlValueAccessor<dynamic> {
 
   @Input()
   set disabled(dynamic v) {
-    _disabled = booleanFieldValue(v);
+    _disabled = coerceBooleanProperty(v);
   }
 
   bool get disabled => _disabled;
@@ -54,7 +55,7 @@ class MdSlideToggle implements AfterContentInit, ControlValueAccessor<dynamic> {
 
   @Input()
   set required(dynamic v) {
-    _required = booleanFieldValue(v);
+    _required = coerceBooleanProperty(v);
   }
 
   bool get required => _required;
@@ -179,7 +180,7 @@ class MdSlideToggle implements AfterContentInit, ControlValueAccessor<dynamic> {
 
   @Input()
   set checked(dynamic value) {
-    bool v = booleanFieldValue(value);
+    bool v = coerceBooleanProperty(value);
     if (!identical(checked, v)) {
       _checked = v;
       onChange(_checked);
@@ -214,21 +215,26 @@ class MdSlideToggle implements AfterContentInit, ControlValueAccessor<dynamic> {
   }
 
   void onDragStart() {
-    _slideRenderer.startThumbDrag(checked);
+    if (!disabled) _slideRenderer.startThumbDrag(checked);
   }
 
   // TODO: Implement HammerJS wrapper, or wait for yet another solution.
   // HammerInput
   void onDrag(dynamic event) {
-    _slideRenderer.updateThumbPosition(event.deltaX);
+    if (_slideRenderer.isDragging()) {
+      _slideRenderer.updateThumbPosition(event.deltaX);
+    }
   }
 
   void onDragEnd() {
+    if (!_slideRenderer.isDragging()) return;
+
     // Notice that we have to stop outside of the current event handler,
     // because otherwise the click event will be fired and will reset
     // the new checked variable.
     new Future<Null>.delayed((const Duration(milliseconds: 0)), () {
       checked = _slideRenderer.stopThumbDrag();
+      _emitChangeEvent();
     });
   }
 }
@@ -280,10 +286,8 @@ class SlideToggleRenderer {
 
   /// Updates the thumb containers position from the specified distance.
   void updateThumbPosition(num distance) {
-    if (_thumbBarWidth != 0) {
-      _percentage = _getThumbPercentage(distance);
-      applyCssTransform(_thumbEl, 'translate3d($_percentage%, 0, 0)');
-    }
+    _percentage = _getThumbPercentage(distance);
+    applyCssTransform(_thumbEl, 'translate3d($_percentage%, 0, 0)');
   }
 
   /// Retrieves the percentage of thumb from the moved distance.

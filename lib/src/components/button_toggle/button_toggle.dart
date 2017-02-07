@@ -1,7 +1,7 @@
 import 'dart:html';
 
 import 'dart:async';
-import "package:angular2/core.dart";
+import "package:angular2/angular2.dart";
 import "package:angular2/common.dart";
 import "../../core/core.dart";
 
@@ -22,6 +22,10 @@ class MdButtonToggleChange {
   dynamic value;
 }
 
+/**
+ * The method to be called in order to update ngModel.
+ * Now `ngModel` binding is not supported in multiple selection mode.
+*/
 typedef void _ControlValueAccessorChangeFn(dynamic value);
 
 /// Exclusive selection button toggle group that behaves like a radio-button group.
@@ -81,8 +85,7 @@ class MdButtonToggleGroup
 
   @Input()
   set disabled(dynamic v) {
-    v = booleanFieldValue(v);
-    _disabled = (v != null && !identical(v, false)) ? true : null;
+    _disabled = coerceBooleanProperty(v);
   }
 
   dynamic get value => _value;
@@ -165,7 +168,7 @@ class MdButtonToggleGroup
   }
 }
 
-/// Multiple selection button-toggle group.
+/// Multiple selection button-toggle group. `ngModel` is not supported in this mode.
 @Directive(selector: "md-button-toggle-group[multiple]")
 class MdButtonToggleGroupMultiple {
   /// Disables all toggles in the group.
@@ -314,7 +317,7 @@ class MdButtonToggle implements OnInit {
 
   @Input()
   set disabled(dynamic value) {
-    _disabled = booleanFieldValue(value);
+    _disabled = coerceBooleanProperty(value);
   }
 
   /// Toggle the state of the current button toggle.

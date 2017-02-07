@@ -1,6 +1,3 @@
-// TODO(jelbourn): Measure perf benefits for translate3d and will-change.
-// TODO(jelbourn): Figure out if anchor hover underline actually happens in any browser.
-
 @import 'button_base';
 
 // TODO(kara): Replace attribute selectors with class selectors when possible
@@ -42,6 +39,14 @@
   line-height: $md-icon-button-line-height;
   border-radius: $md-icon-button-border-radius;
 
+  .md-button-wrapper > * {
+    line-height: $md-icon-button-line-height;
+    vertical-align: middle;
+  }
+}
+
+// The text and icon should be vertical aligned inside a button
+[md-button], [md-raised-button] {
   .md-button-wrapper > * {
     vertical-align: middle;
   }

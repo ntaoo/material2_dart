@@ -1,6 +1,6 @@
 import 'dart:html';
 import "dart:async";
-import "package:angular2/core.dart";
+import "package:angular2/angular2.dart";
 import "position_strategy.dart";
 
 class RelativePositionStrategy implements PositionStrategy {

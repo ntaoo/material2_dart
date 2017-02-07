@@ -8,4 +8,15 @@ class OverlayState {
 
   /// Whether the overlay has a backdrop.
   bool hasBackdrop = false;
+
+  /// Custom class to add to the backdrop.
+  String backdropClass = 'md-overlay-dark-backdrop';
+
+  /// The width of the overlay panel. If a number is provided, pixel units are assumed.
+  dynamic /*num | String*/ width;
+
+  /// The height of the overlay panel. If a number is provided, pixel units are assumed.
+  dynamic /*num | String*/ height;
+
+  String direction = 'ltr';
 }

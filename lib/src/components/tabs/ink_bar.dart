@@ -1,5 +1,5 @@
 import 'dart:html';
-import "package:angular2/core.dart";
+import "package:angular2/angular2.dart";
 
 /**
  * The ink-bar is used to display and animate the line underneath the current active tab label.

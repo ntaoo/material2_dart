@@ -1,7 +1,7 @@
 import 'dart:html';
 import 'dart:async';
 import 'dart:math';
-import 'package:angular2/core.dart';
+import 'package:angular2/angular2.dart';
 
 enum ForegroundRippleState {
   emerging, // It's `NEW` in the TS version. Because `new` is a reserved keyword in Dart.
@@ -51,21 +51,24 @@ class RippleRenderer {
 
   /// Installs event handlers on the given trigger element,
   /// and removes event handlers from the previous trigger if needed.
-  Future<Null> setTriggerElement(Element newTrigger) async {
-    if (_triggerElement == newTrigger) return null;
+  Future<Null> setTriggerElement(Element newTrigger) {
+    return new Future.sync(() async {
+      if (_triggerElement == newTrigger) return null;
 
-    await new Future<Null>.sync(() async {
-      if (_triggerElement != null) {
+      if (_triggerElement != null && _eventSubscriptions != null) {
         await Future
-            .wait/*<dynamic>*/(_eventSubscriptions.map((es) => es.cancel()));
-        _eventSubscriptions = null;
+            .wait/*<dynamic>*/(_eventSubscriptions
+                .map((StreamSubscription es) => es.cancel())
+                .where((Future f) => f != null))
+            .then/*<Null>*/((_) {
+          _eventSubscriptions = null;
+        });
+      }
+      _triggerElement = newTrigger;
+      if (_triggerElement != null) {
+        _eventSubscriptions = _addEventHandlers(_triggerElement);
       }
     });
-
-    _triggerElement = newTrigger;
-    if (_triggerElement != null) {
-      _eventSubscriptions = _addEventHandlers(_triggerElement);
-    }
   }
 
   /// Installs event handlers on the host element of the md-ripple directive.

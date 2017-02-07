@@ -9,17 +9,6 @@ You can read more about button toggles in the
 
 ## Usage
 
-### Setup
-
-Importing the module:
-```ts
- @NgModule({
-    imports: [MdButtonToggleModule],
-    ...
- })
- export class MyAppModule { }
-```
-
 ### Basic Usage
 
 `md-button-toggle` can be used on its own and acts as a checkbox.
@@ -55,7 +44,7 @@ Output:
 
 `md-button-toggle` can be used in a multiple selection group when surrounded by
 `md-button-toggle-group multiple`. This styles all buttons within the group to appear as a single
-group of button toggles.
+group of button toggles. This component does not yet support `NgModel` when using `multiple` mode.
 
 ```html
 <md-button-toggle-group multiple>

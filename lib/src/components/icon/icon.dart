@@ -1,6 +1,6 @@
 import 'dart:html';
 import 'dart:svg';
-import 'package:angular2/core.dart';
+import 'package:angular2/angular2.dart';
 import 'package:quiver/strings.dart';
 
 import '../../core/core.dart';
@@ -119,16 +119,22 @@ class MdIcon implements OnChanges, OnInit, AfterViewChecked {
         final String namespace = l.first;
         final String iconName = l.last;
         try {
-          _mdIconRegistry.getNamedSvgIcon(iconName, namespace).listen((svg) {
+          _mdIconRegistry
+              .getNamedSvgIcon(iconName, namespace)
+              .first
+              .then/*<SvgElement>*/((svg) {
             _setSvgElement(svg);
           });
         } on MdIconNameNotFoundError catch (error) {
           print('Error retrieving icon: $error');
         }
       } else if (svgSrc != null) {
-        _mdIconRegistry.getSvgIconFromUrl(svgSrc).listen((svg) {
+        _mdIconRegistry
+            .getSvgIconFromUrl(svgSrc)
+            .first
+            .then/*<SvgElement>*/((svg) {
           _setSvgElement(svg);
-        }).onError((Error error) {
+        }).catchError((Error error) {
           print('Error retrieving icon: $error');
         });
       }

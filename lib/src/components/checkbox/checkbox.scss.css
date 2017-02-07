@@ -84,11 +84,13 @@
   pointer-events: none; }
 
 md-checkbox {
-  cursor: pointer; }
+  cursor: pointer;
+  transition: background 400ms cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1); }
 
 .md-checkbox-layout {
   cursor: inherit;
   align-items: baseline;
+  vertical-align: middle;
   display: inline-flex; }
 
 .md-checkbox-inner-container {
@@ -101,7 +103,8 @@ md-checkbox {
   position: relative;
   vertical-align: middle;
   white-space: nowrap;
-  width: 20px; }
+  width: 20px;
+  flex-shrink: 0; }
   [dir='rtl'] .md-checkbox-inner-container {
     margin-left: 8px;
     margin-right: auto; }
@@ -194,23 +197,14 @@ md-checkbox {
   bottom: 0;
   left: 50%; }
 
-.md-ink-ripple {
-  border-radius: 50%;
-  opacity: 0;
-  height: 48px;
-  left: 50%;
-  overflow: hidden;
-  pointer-events: none;
+.md-checkbox-ripple {
   position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  transition: opacity ease 280ms, background-color ease 280ms;
-  width: 48px; }
-
-.md-checkbox-focused .md-ink-ripple {
-  opacity: 1; }
-
-.md-checkbox-disabled .md-ink-ripple {
-  background-color: #000; }
+  left: -15px;
+  top: -15px;
+  right: -15px;
+  bottom: -15px;
+  border-radius: 50%;
+  z-index: 1;
+  pointer-events: none; }
 
 /*# sourceMappingURL=checkbox.scss.css.map */

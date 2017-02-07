@@ -4,7 +4,7 @@ import 'ripple/ripple.dart';
 import 'portal/portal_directives.dart';
 import 'overlay/overlay_directives.dart';
 import 'overlay/overlay.dart';
-import "a11y/live_announcer.dart";
+import "a11y/live_announcer.dart" show a11yProviders;
 import "coordination/unique_selection_dispatcher.dart";
 
 // TODO(ntaoo): export LayoutDirection.
@@ -24,11 +24,8 @@ export "overlay/position/connected_position.dart";
 export "overlay/position/connected_position_strategy.dart";
 export "ripple/ripple.dart" show MD_RIPPLE_DIRECTIVES, MdRipple;
 //export "gestures/MdGestureConfig.dart";
-export "a11y/live_announcer.dart"
-    show MdLiveAnnouncer, LIVE_ANNOUNCER_ELEMENT_TOKEN;
-
-export 'a11y/focus_trap.dart';
-export 'a11y/interactivity_checker.dart';
+export "a11y/live_announcer.dart" show a11yProviders, MdLiveAnnouncer;
+export "a11y/fake_mousedown.dart";
 
 export "coordination/unique_selection_dispatcher.dart"
     show MdUniqueSelectionDispatcher, MdUniqueSelectionDispatcherListener;
@@ -36,9 +33,10 @@ export "line/line.dart" show MdLine, MdLineSetter;
 
 export "style/apply_transform.dart" show applyCssTransform;
 export "errors/error.dart" show MdError;
-export "annotations/field_value.dart" show booleanFieldValue;
-export "dart_helper/num_field_value.dart";
+export "annotations/boolean_property.dart" show coerceBooleanProperty;
+export 'animation/animation.dart';
 
+export "coersion/number_property.dart";
 
 const List CORE_DIRECTIVES = const <dynamic>[
   MdLine,
@@ -50,6 +48,6 @@ const List CORE_DIRECTIVES = const <dynamic>[
 
 const List CORE_PROVIDERS = const <dynamic>[
   OVERLAY_PROVIDERS,
-  MdLiveAnnouncer,
+  a11yProviders,
   MdUniqueSelectionDispatcher,
 ];

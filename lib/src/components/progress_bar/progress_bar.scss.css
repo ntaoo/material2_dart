@@ -34,7 +34,8 @@
     display: inline-block;
     height: 100%;
     position: absolute;
-    width: 100%; }
+    width: 100%;
+    left: 0; }
   :host[mode='query'] {
     transform: rotateZ(180deg); }
   :host[mode='indeterminate'] .md-progress-bar-fill, :host[mode='query'] .md-progress-bar-fill {

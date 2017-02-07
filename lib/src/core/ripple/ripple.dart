@@ -1,6 +1,6 @@
 import 'dart:html';
 import 'dart:async';
-import 'package:angular2/core.dart';
+import 'package:angular2/angular2.dart';
 import 'ripple_renderer.dart';
 
 @Directive(selector: '[md-ripple]')
@@ -164,16 +164,3 @@ class MdRipple implements OnInit, OnDestroy, OnChanges {
 }
 
 const List MD_RIPPLE_DIRECTIVES = const [MdRipple];
-
-//@NgModule({
-//  exports: [MdRipple],
-//  declarations: [MdRipple],
-//})
-//export class MdRippleModule {
-//  static forRoot(): ModuleWithProviders {
-//    return {
-//      ngModule: MdRippleModule,
-//      providers: []
-//    };
-//  }
-//}

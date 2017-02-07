@@ -1,5 +1,5 @@
 import 'dart:html';
-import "package:angular2/core.dart";
+import "package:angular2/angular2.dart";
 
 /**
  * Simple utility for getting the bounds of the browser viewport.

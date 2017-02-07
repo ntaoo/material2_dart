@@ -2,7 +2,6 @@
 @import '../../core/style/elevation';
 @import '../../core/style/button_common';
 
-
 // Applies a focus style to an md-button element.
 @mixin md-button-focus {
   &::after {
@@ -26,7 +25,7 @@ $md-button-padding: 0 16px !default;
 $md-button-min-width: 88px !default;
 $md-button-margin: 0 !default;
 $md-button-line-height: 36px !default;
-$md-button-border-radius: 3px !default;
+$md-button-border-radius: 2px !default;
 
 // Icon Button standards
 $md-icon-button-size: 40px !default;
@@ -112,5 +111,6 @@ $md-mini-fab-padding: 8px !default;
 
   i, md-icon {
     padding: $padding 0;
+    line-height: $md-icon-button-line-height;
   }
 }

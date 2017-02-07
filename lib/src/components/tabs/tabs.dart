@@ -1,16 +1,16 @@
 import 'dart:html';
 import 'dart:async';
-import 'package:angular2/core.dart';
+import 'package:angular2/angular2.dart';
 import "../../core/core.dart";
 import "tab_label.dart";
-import "tab_content.dart";
 import "tab_label_wrapper.dart";
+import 'tab_nav_bar/tab_nav_bar.dart';
 import "ink_bar.dart";
 
 export "tab_label.dart";
-export "tab_content.dart";
 export "tab_label_wrapper.dart";
 export "ink_bar.dart";
+export 'tab_nav_bar/tab_nav_bar.dart';
 
 /// Used to generate unique ID's for each tab component.
 int _nextId = 0;
@@ -21,21 +21,38 @@ class MdTabChangeEvent {
   MdTab tab;
 }
 
-@Directive(selector: "md-tab")
-class MdTab {
+@Component(selector: "md-tab", templateUrl: 'tab.html')
+class MdTab implements OnInit {
+  /// Content for the tab label given by <template md-tab-label>.
   @ContentChild(MdTabLabel)
-  MdTabLabel label;
-  @ContentChild(MdTabContent)
-  MdTabContent content;
+  MdTabLabel templateLabel;
+
+  /// Template inside the MdTab view that contains an <ng-content>.
+  @ViewChild(TemplateRef)
+  TemplateRef templateRef;
+
+  /// The plain text label for the tab, used when there is no template label.
+  @Input('label')
+  String textLabel = '';
+
+  TemplatePortal _contentPortal;
+  ViewContainerRef _viewContainerRef;
+  MdTab(this._viewContainerRef);
+
+  @override
+  void ngOnInit() {
+    _contentPortal = new TemplatePortal(templateRef, _viewContainerRef);
+  }
 
   bool _disabled = false;
-
-  @Input('disabled')
+  @Input()
   set disabled(bool value) {
-    _disabled = value ?? false;
+    _disabled = coerceBooleanProperty(value);
   }
 
   bool get disabled => _disabled;
+
+  TemplatePortal get content => _contentPortal;
 }
 
 /// Material design tab-group component.
@@ -211,6 +228,7 @@ class MdTabGroup implements AfterViewChecked {
 const List MD_TABS_DIRECTIVES = const [
   MdTabGroup,
   MdTabLabel,
-  MdTabContent,
-  MdTab
+  MdTab,
+  MdTabNavBar,
+  MdTabLink,
 ];

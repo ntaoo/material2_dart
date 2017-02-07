@@ -1,12 +1,13 @@
 import 'dart:html';
 import 'dart:async';
-import 'package:angular2/core.dart';
-import "../../core/core.dart" show MD_RIPPLE_DIRECTIVES, booleanFieldValue;
+import 'package:angular2/angular2.dart';
+import "../../core/core.dart" show MD_RIPPLE_DIRECTIVES, coerceBooleanProperty;
 
 @Component(
     selector:
         'button[md-button], button[md-raised-button], button[md-icon-button], button[md-fab], button[md-mini-fab]',
     host: const {
+      '[disabled]': 'disabled',
       '[class.md-button-focus]': 'isKeyboardFocused',
       '(mousedown)': 'setMousedown()',
       '(focus)': 'setKeyboardFocus()',
@@ -26,15 +27,23 @@ class MdButton {
   /// Whether a mousedown has occurred on this element in the last 100ms.
   bool isMouseDown = false;
 
+  /// Whether the ripple effect on click should be disabled.
   bool _disableRipple = false;
+  bool _disabled = false;
 
   /// Whether the ripple effect on click should be disabled.
   @Input()
   set disableRipple(dynamic v) {
-    _disableRipple = booleanFieldValue(v);
+    _disableRipple = coerceBooleanProperty(v);
   }
 
   bool get disableRipple => _disableRipple;
+
+  bool get disabled => _disabled;
+  @Input()
+  set disabled(bool value) {
+    _disabled = coerceBooleanProperty(value);
+  }
 
   ElementRef _elementRef;
   Element get _nativeElement => _elementRef.nativeElement;
@@ -89,14 +98,17 @@ class MdButton {
         attributes.containsKey('md-mini-fab');
   }
 
-  bool isRippleEnabled() => !disableRipple;
+  bool isRippleDisabled() {
+    return disableRipple || disabled;
+  }
 }
 
 @Component(
     selector:
         'a[md-button], a[md-raised-button], a[md-icon-button], a[md-fab], a[md-mini-fab]',
-    inputs: const ['color'],
+    inputs: const ['color', 'disabled', 'disableRipple'],
     host: const {
+      '[attr.disabled]': 'disabled',
       '[class.md-button-focus]': 'isKeyboardFocused',
       '(mousedown)': 'setMousedown()',
       '(focus)': 'setKeyboardFocus()',
@@ -108,7 +120,6 @@ class MdButton {
     directives: const [MD_RIPPLE_DIRECTIVES],
     encapsulation: ViewEncapsulation.None)
 class MdAnchor extends MdButton {
-  bool _disabled = false;
 
   MdAnchor(ElementRef _elementRef) : super(_elementRef);
 
@@ -118,16 +129,7 @@ class MdAnchor extends MdButton {
   @HostBinding('attr.aria-disabled')
   // Gets the aria-disabled value for the component, which must be a string for Dart.
   String get isAriaDisabled => _disabled ? 'true' : 'false';
-
-  @HostBinding('attr.disabled')
-  bool get disabled => _disabled;
-
-  // The presence of *any* disabled value makes the component disabled, *except* for false.
-  @Input('disabled')
-  set disabled(bool value) {
-    _disabled = value != null && value != false;
-  }
-
+  
   // internal
   void haltDisabledEvents(Event event) {
     // A disabled button shouldn't apply any actions

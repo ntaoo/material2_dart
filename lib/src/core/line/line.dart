@@ -1,5 +1,5 @@
 import 'dart:html';
-import "package:angular2/core.dart";
+import "package:angular2/angular2.dart";
 
 /**
  * Shared directive to count lines inside a text area, such as a list item.
@@ -23,12 +23,15 @@ class MdLineSetter {
 
   void _setLineClass(num count) {
     _resetClasses();
-    if (identical(count, 2) || identical(count, 3)) {
+    if (count == 2 || count == 3) {
       _nativeElement.classes.add('md-$count-line');
+    } else if (count > 3) {
+      _nativeElement.classes.add('md-multi-line');
     }
   }
 
   void _resetClasses() {
-    _nativeElement.classes..remove('md-2-line')..remove('md-3-line');
+    _nativeElement.classes
+        .removeAll(['md-2-line', 'md-3-line', 'md-multi-line']);
   }
 }

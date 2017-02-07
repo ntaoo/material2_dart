@@ -16,16 +16,14 @@ class OverlayRef implements PortalHost {
   OverlayRef(this._portalHost, this._pane, this._state);
 
   @override
-  Future<dynamic> attach(Portal<dynamic> portal) {
-    if (_state.hasBackdrop) {
-      _attachBackdrop();
-    }
+  Future<dynamic> attach(Portal<dynamic> portal) async {
+    if (_state.hasBackdrop) _attachBackdrop();
 
-    var attachFuture = _portalHost.attach(portal);
-    attachFuture.then/*<dynamic>*/((dynamic _) {
-      updatePosition();
-    });
-    return attachFuture;
+    dynamic attachResult = await _portalHost.attach(portal);
+    updateSize();
+    _updateDirection();
+    updatePosition();
+    return attachResult;
   }
 
   @override
@@ -53,9 +51,26 @@ class OverlayRef implements PortalHost {
     }
   }
 
+  /// Updates the text direction of the overlay panel.
+  void _updateDirection() {
+    _pane.attributes['dir'] = _state.direction;
+  }
+
+  /// Updates the size of the overlay based on the overlay config.
+  void updateSize() {
+    if (_state.width != null) {
+      _pane.style.width = formatCssUnit(_state.width);
+    }
+
+    if (_state.height != null) {
+      _pane.style.height = formatCssUnit(_state.height);
+    }
+  }
+
   /// Attaches a backdrop for this overlay.
   void _attachBackdrop() {
-    _backdropElement = new DivElement()..classes.add('md-overlay-backdrop');
+    _backdropElement = new DivElement()
+      ..classes.addAll(['md-overlay-backdrop', _state.backdropClass]);
     _pane.parent.append(_backdropElement);
 
     // Forward backdrop clicks such that the consumer of the overlay can perform whatever
@@ -73,17 +88,22 @@ class OverlayRef implements PortalHost {
     var backdropToDetach = _backdropElement;
 
     if (backdropToDetach != null) {
-      backdropToDetach.classes.remove('md-overlay-backdrop-showing');
-      backdropToDetach.onTransitionEnd.listen((_) {
-        backdropToDetach.remove();
+      backdropToDetach
+        ..classes
+            .removeAll(['md-overlay-backdrop-showing', _state.backdropClass])
+        ..onTransitionEnd.listen((_) {
+          backdropToDetach.remove();
 
-        // It is possible that a new portal has been attached to this overlay since we started
-        // removing the backdrop. If that is the case, only clear the backdrop reference if it
-        // is still the same instance that we started to remove.
-        if (_backdropElement == backdropToDetach) {
-          _backdropElement = null;
-        }
-      });
+          // It is possible that a new portal has been attached to this overlay since we started
+          // removing the backdrop. If that is the case, only clear the backdrop reference if it
+          // is still the same instance that we started to remove.
+          if (_backdropElement == backdropToDetach) {
+            _backdropElement = null;
+          }
+        });
     }
   }
 }
+
+// value: num | String
+String formatCssUnit(dynamic value) => value is String ? value : '${value}px';

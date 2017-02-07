@@ -1,4 +1,4 @@
-import 'package:angular2/core.dart';
+import 'package:angular2/angular2.dart';
 
 const String ltr = 'ltr';
 const String rtl = 'rtl';
@@ -9,10 +9,7 @@ const String rtl = 'rtl';
  * Applications should use this directive instead of the native attribute so that Material
  * components can listen on changes of direction.
  */
-@Directive(
-    selector: '[dir]',
-// TODO(hansl): maybe `$implicit` isn't the best option here, but for now that's the best we got.
-    exportAs: r'$implicit')
+@Directive(selector: '[dir]', exportAs: r'$implicit')
 class Dir {
   // Because Dart doesn't have Union Types.
   final List<String> _layoutDirections = const [ltr, rtl];

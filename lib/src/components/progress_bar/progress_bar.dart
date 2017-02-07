@@ -1,5 +1,5 @@
 import "dart:math" as math;
-import "package:angular2/core.dart";
+import "package:angular2/angular2.dart";
 // TODO(josephperrott): Benchpress tests.
 
 // TODO(josephperrott): Add ARIA attributes for progressbar "for".

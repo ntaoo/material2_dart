@@ -1,7 +1,8 @@
 :host {
   display: block;
   height: 100px;
-  width: 100px; }
+  width: 100px;
+  overflow: hidden; }
   :host svg {
     height: 100%;
     width: 100%;
@@ -9,7 +10,7 @@
   :host path {
     fill: transparent;
     stroke-width: 10px; }
-  :host[mode='indeterminate'] {
+  :host[mode='indeterminate'] svg {
     animation-duration: 5250ms, 2887.5ms;
     animation-name: md-progress-circle-sporadic-rotate, md-progress-circle-linear-rotate;
     animation-timing-function: cubic-bezier(0.35, 0, 0.25, 1), linear;

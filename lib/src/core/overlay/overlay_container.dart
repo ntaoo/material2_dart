@@ -1,5 +1,5 @@
 import 'dart:html';
-import 'package:angular2/core.dart';
+import 'package:angular2/angular2.dart';
 
 /// The OverlayContainer is the container in which all overlays will load.
 /// It should be provided in the root component to ensure it is properly shared.

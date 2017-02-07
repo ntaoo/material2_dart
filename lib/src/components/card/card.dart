@@ -1,4 +1,4 @@
-import 'package:angular2/core.dart';
+import 'package:angular2/angular2.dart';
 
 /// Content of a card, needed as it's used as a selector in the API.
 @Directive(selector: 'md-card-content')

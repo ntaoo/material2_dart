@@ -60,23 +60,14 @@ md-radio-button {
 .md-radio-disabled, .md-radio-disabled .md-radio-label {
   cursor: default; }
 
-.md-ink-ripple {
-  border-radius: 50%;
-  opacity: 0;
-  height: 48px;
-  left: 50%;
-  overflow: hidden;
-  pointer-events: none;
+.md-radio-ripple {
   position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  transition: opacity ease 280ms, background-color ease 280ms;
-  width: 48px; }
-
-.md-radio-focused .md-ink-ripple {
-  opacity: 1; }
-
-.md-radio-disabled .md-ink-ripple {
-  background-color: #000; }
+  left: -15px;
+  top: -15px;
+  right: -15px;
+  bottom: -15px;
+  border-radius: 50%;
+  z-index: 1;
+  pointer-events: none; }
 
 /*# sourceMappingURL=radio.scss.css.map */

@@ -18,6 +18,7 @@ $md-progress-circle-viewport-size: 100px !default;
   // The height and width are expected to be overwritten by application css.
   height: $md-progress-circle-viewport-size;
   width: $md-progress-circle-viewport-size;
+  overflow: hidden;
 
   // SVG's viewBox is defined as 0 0 100 100, this means that all SVG children will placed
   // based on a 100px by 100px box.  Additionally all SVG sizes and locations are in reference to
@@ -37,7 +38,7 @@ $md-progress-circle-viewport-size: 100px !default;
   }
 
 
-  &[mode='indeterminate'] {
+  &[mode='indeterminate'] svg {
     animation-duration: $md-progress-circle-sporadic-rotate-duration,
                         $md-progress-circle-constant-rotate-duration;
     animation-name: md-progress-circle-sporadic-rotate,

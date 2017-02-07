@@ -1,9 +1,8 @@
 import 'dart:html';
-import "package:angular2/core.dart";
+import "package:angular2/angular2.dart";
 import "package:angular2/common.dart";
 import '../../core/core.dart';
 
-// Re-exports.
 export "../../core/coordination/unique_selection_dispatcher.dart";
 
 /**
@@ -12,13 +11,6 @@ export "../../core/coordination/unique_selection_dispatcher.dart";
  */
 const Provider MD_RADIO_GROUP_CONTROL_VALUE_ACCESSOR =
     const Provider(NG_VALUE_ACCESSOR, useExisting: MdRadioGroup, multi: true);
-
-// TODO(mtlin):
-// Ink ripple is currently placeholder.
-// Determine motion spec for button transitions.
-// Design review.
-// RTL
-// Support forms API.
 
 // Use ChangeDetectionStrategy.OnPush
 var _uniqueIdCounter = 0;
@@ -34,13 +26,21 @@ class MdRadioChange {
     providers: const [MD_RADIO_GROUP_CONTROL_VALUE_ACCESSOR],
     host: const {"role": "radiogroup"})
 class MdRadioGroup implements AfterContentInit, ControlValueAccessor<dynamic> {
-  /**
-   * Selected value for group. Should equal the value of the selected radio button if there *is*
-   * a corresponding radio button with a matching value. If there is *not* such a corresponding
-   * radio button, this value persists to be applied in case a new radio button is added with a
-   * matching value.
-   */
+  /// Selected value for group. Should equal the value of the selected radio button if there *is*
+  /// a corresponding radio button with a matching value. If there is *not* such a corresponding
+  /// radio button, this value persists to be applied in case a new radio button is added with a
+  /// matching value.
   dynamic _value;
+
+  bool _disableRipple = false;
+
+  /// Whether the ripple effect on click should be disabled.
+  @Input()
+  set disableRipple(dynamic v) {
+    _disableRipple = coerceBooleanProperty(v);
+  }
+
+  bool get disableRipple => _disableRipple;
 
   /** The HTML name attribute applied to radio buttons in this group. */
   String _name = 'md-radio-group-${_uniqueIdCounter++}';
@@ -55,7 +55,7 @@ class MdRadioGroup implements AfterContentInit, ControlValueAccessor<dynamic> {
   bool _isInitialized = false;
 
   /** The method to be called in order to update ngModel */
-  dynamic _controlValueAccessorChangeFn = (dynamic value) {};
+  dynamic controlValueAccessorChangeFn = (dynamic value) {};
 
   /** onTouch function registered via registerOnTouch (ControlValueAccessor). */
   dynamic onTouched = () {};
@@ -85,7 +85,7 @@ class MdRadioGroup implements AfterContentInit, ControlValueAccessor<dynamic> {
   @Input()
   set disabled(dynamic value) {
     // The presence of *any* disabled value makes the component disabled, *except* for false.
-    _disabled = booleanFieldValue(value);
+    _disabled = coerceBooleanProperty(value);
   }
 
   dynamic get value => _value;
@@ -96,10 +96,6 @@ class MdRadioGroup implements AfterContentInit, ControlValueAccessor<dynamic> {
       // Set this before proceeding to ensure no circular loop occurs with selection.
       _value = newValue;
       _updateSelectedRadioFromValue();
-      // Only fire a change event if this isn't the first time the value is ever set.
-      if (_isInitialized) {
-        _emitChangeEvent();
-      }
     }
   }
 
@@ -156,12 +152,11 @@ class MdRadioGroup implements AfterContentInit, ControlValueAccessor<dynamic> {
     }
   }
 
-  /** Dispatch change event with current selection and group value. */
-  void _emitChangeEvent() {
-    var event = new MdRadioChange();
-    event.source = _selected;
-    event.value = _value;
-    _controlValueAccessorChangeFn(event.value);
+  /// Dispatch change event with current selection and group value.
+  void emitChangeEvent() {
+    var event = new MdRadioChange()
+      ..source = _selected
+      ..value = _value;
     change.emit(event);
   }
 
@@ -179,7 +174,7 @@ class MdRadioGroup implements AfterContentInit, ControlValueAccessor<dynamic> {
   // void fn(dynamic value)
   @override
   void registerOnChange(dynamic fn) {
-    _controlValueAccessorChangeFn = fn;
+    controlValueAccessorChangeFn = fn;
   }
 
   /**
@@ -195,9 +190,12 @@ class MdRadioGroup implements AfterContentInit, ControlValueAccessor<dynamic> {
   selector: "md-radio-button",
   templateUrl: "radio.html",
   styleUrls: const ["radio.scss.css"],
+  directives: const [MD_RIPPLE_DIRECTIVES],
   encapsulation: ViewEncapsulation.None,
 )
 class MdRadioButton implements OnInit {
+  ElementRef _elementRef;
+  Element get nativeElement => _elementRef.nativeElement;
   MdUniqueSelectionDispatcher radioDispatcher;
   @HostBinding("class.md-radio-focused")
   bool isFocused = false;
@@ -222,20 +220,31 @@ class MdRadioButton implements OnInit {
   @Input("aria-labelledby")
   String ariaLabelledby;
 
+  bool _disableRipple = false;
+
+  /// Whether the ripple effect on click should be disabled.
+  @Input()
+  set disableRipple(dynamic v) {
+    _disableRipple = coerceBooleanProperty(v);
+  }
+
+  bool get disableRipple => _disableRipple;
+
   /** Whether this radio is disabled. */
   bool _disabled = false;
 
   /** Value assigned to this radio.*/
   dynamic _value;
 
-  /** The parent radio group. May or may not be present. */
+  /// The parent radio group. May or may not be present.
   MdRadioGroup radioGroup;
 
   /** Event emitted when the group value changes. */
   @Output()
   EventEmitter<MdRadioChange> change = new EventEmitter<MdRadioChange>();
 
-  MdRadioButton(@Optional() MdRadioGroup radioGroup, this.radioDispatcher) {
+  MdRadioButton(@Optional() MdRadioGroup radioGroup, this._elementRef,
+      this.radioDispatcher) {
     // Assertions. Ideally these should be stripped out by the compiler.
 
     // TODO(jelbourn): Assert that there's no name binding AND a parent radio group.
@@ -252,13 +261,20 @@ class MdRadioButton implements OnInit {
 
   @Input()
   set checked(bool newCheckedState) {
-    if (newCheckedState) {
-      // Notify all radio buttons with the same name to un-check.
-      radioDispatcher.notify(id, name);
-    }
     _checked = newCheckedState;
     if (newCheckedState && radioGroup != null && radioGroup.value != value) {
       radioGroup.selected = this;
+    } else if (!newCheckedState &&
+        radioGroup != null &&
+        radioGroup.value == value) {
+      // When unchecking the selected radio button, update the selected radio
+      // property on the group.
+      radioGroup.selected = null;
+    }
+
+    if (newCheckedState) {
+      // Notify all radio buttons with the same name to un-check.
+      radioDispatcher.notify(id, name);
     }
   }
 
@@ -297,7 +313,7 @@ class MdRadioButton implements OnInit {
   @Input()
   set disabled(dynamic value) {
     // The presence of *any* disabled value makes the component disabled, *except* for false.
-    _disabled = booleanFieldValue(value);
+    _disabled = coerceBooleanProperty(value);
   }
 
   @override
@@ -316,6 +332,10 @@ class MdRadioButton implements OnInit {
     event.source = this;
     event.value = _value;
     change.emit(event);
+  }
+
+  bool isRippleDisabled() {
+    return disableRipple || disabled;
   }
 
   /// We use a hidden native input field to handle changes to focus state via keyboard navigation,
@@ -352,13 +372,22 @@ class MdRadioButton implements OnInit {
     // emit its event object to the `change` output.
     event.stopPropagation();
 
+    bool groupValueChanged = radioGroup != null && value != radioGroup.value;
     checked = true;
     _emitChangeEvent();
 
     if (radioGroup != null) {
+      radioGroup.controlValueAccessorChangeFn(value);
       radioGroup.touch();
+      if (groupValueChanged) {
+        radioGroup.emitChangeEvent();
+      }
     }
   }
+
+  Element getHostElement() => _elementRef.nativeElement;
+
+  bool isRippleEnabled() => !disableRipple;
 }
 
 const List MD_RADIO_DIRECTIVES = const [MdRadioGroup, MdRadioButton];

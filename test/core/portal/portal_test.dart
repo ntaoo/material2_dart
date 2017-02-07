@@ -1,5 +1,5 @@
 import 'dart:html';
-import 'package:angular2/core.dart';
+import 'package:angular2/angular2.dart';
 import "package:angular2/testing_internal.dart";
 import 'package:material2_dart/material.dart';
 @TestOn('browser')
@@ -221,9 +221,12 @@ void main() {
       test('should attach and detach a component portal', () {
         return inject(
             [TestComponentBuilder, AsyncTestCompleter, ComponentResolver],
-            (TestComponentBuilder tcb, AsyncTestCompleter completer,
-                ComponentResolver resolver) async {
-          host = new DomPortalHost(aDivElement, resolver);
+            (TestComponentBuilder tcb,
+                AsyncTestCompleter completer,
+                ComponentResolver resolver,
+                ApplicationRef appref,
+                Injector injector) async {
+          host = new DomPortalHost(aDivElement, resolver, appref, injector);
           fakeAsync(() async {
             ComponentFixture fixture =
                 await tcb.createAsync(ArbitraryViewContainerRefComponent);
@@ -256,9 +259,12 @@ void main() {
           () {
         return inject(
             [TestComponentBuilder, AsyncTestCompleter, ComponentResolver],
-            (TestComponentBuilder tcb, AsyncTestCompleter completer,
-                ComponentResolver resolver) async {
-          host = new DomPortalHost(aDivElement, resolver);
+            (TestComponentBuilder tcb,
+                AsyncTestCompleter completer,
+                ComponentResolver resolver,
+                ApplicationRef appref,
+                Injector injector) async {
+          host = new DomPortalHost(aDivElement, resolver, appref, injector);
           fakeAsync(() async {
             ComponentFixture fixture =
                 await tcb.createAsync(ArbitraryViewContainerRefComponent);
@@ -295,9 +301,12 @@ void main() {
       test('should attach and detach a template portal', () {
         return inject(
             [TestComponentBuilder, AsyncTestCompleter, ComponentResolver],
-            (TestComponentBuilder tcb, AsyncTestCompleter completer,
-                ComponentResolver resolver) {
-          host = new DomPortalHost(aDivElement, resolver);
+            (TestComponentBuilder tcb,
+                AsyncTestCompleter completer,
+                ComponentResolver resolver,
+                ApplicationRef appref,
+                Injector injector) {
+          host = new DomPortalHost(aDivElement, resolver, appref, injector);
           fakeAsync(() async {
             ComponentFixture appFixture = await tcb.createAsync(PortalTestApp);
             flushMicrotasks();
@@ -316,9 +325,12 @@ void main() {
       test('should attach and detach a template portal with a binding', () {
         return inject(
             [TestComponentBuilder, AsyncTestCompleter, ComponentResolver],
-            (TestComponentBuilder tcb, AsyncTestCompleter completer,
-                ComponentResolver resolver) {
-          host = new DomPortalHost(aDivElement, resolver);
+            (TestComponentBuilder tcb,
+                AsyncTestCompleter completer,
+                ComponentResolver resolver,
+                ApplicationRef appref,
+                Injector injector) {
+          host = new DomPortalHost(aDivElement, resolver, appref, injector);
           fakeAsync(() async {
             ComponentFixture appFixture = await tcb.createAsync(PortalTestApp);
             flushMicrotasks();
@@ -352,9 +364,12 @@ void main() {
       test('should change the attached portal', () {
         return inject(
             [TestComponentBuilder, AsyncTestCompleter, ComponentResolver],
-            (TestComponentBuilder tcb, AsyncTestCompleter completer,
-                ComponentResolver resolver) {
-          host = new DomPortalHost(aDivElement, resolver);
+            (TestComponentBuilder tcb,
+                AsyncTestCompleter completer,
+                ComponentResolver resolver,
+                ApplicationRef appref,
+                Injector injector) {
+          host = new DomPortalHost(aDivElement, resolver, appref, injector);
           fakeAsync(() async {
             aViewContainerRef =
                 (await tcb.createAsync(ArbitraryViewContainerRefComponent))

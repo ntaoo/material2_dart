@@ -27,9 +27,14 @@
     outline: none;
     opacity: 1; }
 
-.md-tab-disabled {
-  cursor: default;
-  pointer-events: none; }
+@media (max-width: 600px) {
+  .md-tab-label {
+    min-width: 72px; } }
+md-ink-bar {
+  position: absolute;
+  bottom: 0;
+  height: 2px;
+  transition: 350ms ease-out; }
 
 .md-tab-body-wrapper {
   position: relative;
@@ -46,10 +51,8 @@
   .md-tab-body.md-tab-active {
     display: block; }
 
-md-ink-bar {
-  position: absolute;
-  bottom: 0;
-  height: 2px;
-  transition: 350ms ease-out; }
+.md-tab-disabled {
+  cursor: default;
+  pointer-events: none; }
 
 /*# sourceMappingURL=tab_group.scss.css.map */

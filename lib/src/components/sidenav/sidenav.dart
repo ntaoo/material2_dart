@@ -1,6 +1,6 @@
 import 'dart:html';
 import 'dart:async';
-import 'package:angular2/core.dart';
+import 'package:angular2/angular2.dart';
 import '../../core/core.dart';
 
 /** Exception thrown when two MdSidenav are matching the same side. */
@@ -28,22 +28,48 @@ void validateArgument(dynamic value, List<dynamic> list) {
       '(transitionend)': r'onTransitionEnd($event)',
       // must prevent the browser from aligning text based on value
       '[attr.align]': 'null',
+      '[class.md-sidenav-closed]': 'isClosed',
+      '[class.md-sidenav-closing]': 'isClosing',
+      '[class.md-sidenav-end]': 'isEnd',
+      '[class.md-sidenav-opened]': 'isOpened',
+      '[class.md-sidenav-opening]': 'isOpening',
+      '[class.md-sidenav-over]': 'modeOver',
+      '[class.md-sidenav-push]': 'modePush',
+      '[class.md-sidenav-side]': 'modeSide',
+      '[class.md-sidenav-invalid]': '!valid',
     },
     changeDetection: ChangeDetectionStrategy.OnPush,
     encapsulation: ViewEncapsulation.None)
-class MdSidenav {
+class MdSidenav implements AfterContentInit {
   /// Alignment of the sidenav (direction neutral); whether 'start' or 'end'.
   String _align = 'start';
+
+  /// Whether this md-sidenav is part of a valid md-sidenav-layout configuration.
+  bool get valid => _valid;
+
+  set valid(dynamic value) {
+    value = coerceBooleanProperty(value);
+    // When the drawers are not in a valid configuration we close them all until they are in a valid
+    // configuration again.
+    if (!value) close();
+    _valid = value;
+  }
+
+  bool _valid = true;
 
   String get align => _align;
 
   @Input()
   set align(String value) {
-    validateArgument(value, ['start', 'end']);
-    _align = value;
+    // Make sure we have a valid value.
+    value = value == 'end' ? 'end' : 'start';
+    if (value != _align) {
+      _align = value;
+      onAlignChanged.add(null);
+    }
   }
 
-  /** Mode of the sidenav; whether 'over' or 'side'. */
+  /// Mode of the sidenav; whether 'over' or 'side'.
   String _mode = 'over';
 
   String get mode => _mode;
@@ -61,31 +87,43 @@ class MdSidenav {
 
   @Input()
   set opened(dynamic v) {
-    validateArgument(v, ['true', 'false', true, false, null]);
-    bool value = booleanFieldValue(v);
-    toggle(value);
+    toggle(coerceBooleanProperty(v));
   }
 
   /** Event emitted when the sidenav is being opened. Use this to synchronize animations. */
   @Output('open-start')
-  EventEmitter onOpenStart = new EventEmitter<Null>();
+  EventEmitter<Null> onOpenStart = new EventEmitter<Null>();
 
   /** Event emitted when the sidenav is fully opened. */
   @Output('open')
-  EventEmitter onOpen = new EventEmitter<Null>();
+  EventEmitter<Null> onOpen = new EventEmitter<Null>();
 
   /** Event emitted when the sidenav is being closed. Use this to synchronize animations. */
   @Output('close-start')
-  EventEmitter onCloseStart = new EventEmitter<Null>();
+  EventEmitter<Null> onCloseStart = new EventEmitter<Null>();
 
-  /** Event emitted when the sidenav is fully closed. */
+  /// Event emitted when the sidenav is fully closed.
   @Output('close')
-  EventEmitter onClose = new EventEmitter<Null>();
+  EventEmitter<Null> onClose = new EventEmitter<Null>();
+
+  /// Event emitted when the sidenav alignment changes.
+  @Output('align-changed')
+  EventEmitter<Null> onAlignChanged = new EventEmitter<Null>();
 
   // This should be private but currently is public just for testing.
   ElementRef elementRef;
 
   MdSidenav(this.elementRef);
+
+  @override
+  void ngAfterContentInit() {
+    // This can happen when the sidenav is set to opened in the template and the transition
+    // isn't ended.
+    if (_openFuture != null) {
+      _openFutureSuccess();
+      _openFuture = null;
+    }
+  }
 
   /** Open this sidenav, and return a Promise that will resolve when it's fully opened (or get
    * rejected if it didn't). */
@@ -101,7 +139,9 @@ class MdSidenav {
     return toggle(false);
   }
 
-  Future toggle([bool isOpen]) {
+  Future<Null> toggle([bool isOpen]) {
+    if (!valid) return new Future.value(null);
+
     if (isOpen == null) isOpen = !opened;
     if (isOpen == opened) {
       if (!_transition) {
@@ -121,7 +161,7 @@ class MdSidenav {
 
     if (isOpen) {
       if (_openFuture == null) {
-        var completer = new Completer<dynamic>();
+        var completer = new Completer<Null>();
         _openFuture = completer.future;
         _openFutureError = completer.completeError;
         _openFutureSuccess = completer.complete;
@@ -129,7 +169,7 @@ class MdSidenav {
       return _openFuture;
     } else {
       if (_closeFuture == null) {
-        var completer = new Completer<dynamic>();
+        var completer = new Completer<Null>();
         _closeFuture = completer.future;
         _closeFutureError = completer.completeError;
         _closeFutureSuccess = completer.complete;
@@ -162,28 +202,13 @@ class MdSidenav {
     }
   }
 
-  @HostBinding('class.md-sidenav-closing')
   bool get isClosing => !_opened && _transition;
-
-  @HostBinding('class.md-sidenav-opening')
   bool get isOpening => _opened && _transition;
-
-  @HostBinding('class.md-sidenav-closed')
   bool get isClosed => !_opened && !_transition;
-
-  @HostBinding('class.md-sidenav-opened')
   bool get isOpened => _opened && !_transition;
-
-  @HostBinding('class.md-sidenav-end')
   bool get isEnd => align == 'end';
-
-  @HostBinding('class.md-sidenav-side')
   bool get modeSide => mode == 'side';
-
-  @HostBinding('class.md-sidenav-over')
   bool get modeOver => mode == 'over';
-
-  @HostBinding('class.md-sidenav-push')
   bool get modePush => mode == 'push';
 
   /**
@@ -198,10 +223,10 @@ class MdSidenav {
   }
 
   bool _transition = false;
-  Future _openFuture;
+  Future<Null> _openFuture;
   Function _openFutureSuccess;
   Function _openFutureError;
-  Future _closeFuture;
+  Future<Null> _closeFuture;
   Function _closeFutureSuccess;
   Function _closeFutureError;
 }
@@ -210,7 +235,7 @@ class MdSidenav {
  * <md-sidenav-layout> component.
  *
  * This is the parent component to one or two <md-sidenav>s that validates the state internally
- * and coordinate the backdrop and content styling.
+ * and coordinates the backdrop and content styling.
  */
 @Component(
     selector: 'md-sidenav-layout',
@@ -260,22 +285,34 @@ class MdSidenavLayout implements AfterContentInit {
   void ngAfterContentInit() {
     // On changes, assert on consistency.
     sidenavs.changes.listen((_) => _validateDrawers());
-    sidenavs.forEach((MdSidenav sidenav) => _watchSidenavToggle(sidenav));
+    sidenavs.forEach((MdSidenav sidenav) {
+      _watchSidenavToggle(sidenav);
+      _watchSidenavAlign(sidenav);
+    });
     _validateDrawers();
   }
 
-  /*
-  * Subscribes to sidenav events in order to set a class on the main layout element when the sidenav
-  * is open and the backdrop is visible. This ensures any overflow on the layout element is properly
-  * hidden.
-  */
+  /**
+   * Subscribes to sidenav events in order to set a class on the main layout element when the
+   * sidenav is open and the backdrop is visible. This ensures any overflow on the layout element is
+   * properly hidden.
+   */
   void _watchSidenavToggle(MdSidenav sidenav) {
     if (sidenav == null || sidenav.mode == 'side') return;
     sidenav.onOpen.listen((Null _) => _setLayoutClass(sidenav, true));
     sidenav.onClose.listen((Null _) => _setLayoutClass(sidenav, false));
   }
 
-  /* Toggles the 'md-sidenav-opened' class on the main 'md-sidenav-layout' element. */
+  /**
+   * Subscribes to sidenav onAlignChanged event in order to re-validate drawers when the align
+   * changes.
+   */
+  void _watchSidenavAlign(MdSidenav sidenav) {
+    if (sidenav == null) return;
+    sidenav.onAlignChanged.listen((_) => _validateDrawers());
+  }
+
+  /// Toggles the 'md-sidenav-opened' class on the main 'md-sidenav-layout' element.
   void _setLayoutClass(MdSidenav sidenav, bool bool) {
     if (bool) {
       _nativeElement.classes.add('md-sidenav-opened');
@@ -284,23 +321,38 @@ class MdSidenavLayout implements AfterContentInit {
     }
   }
 
-  /** Validate the state of the sidenav children components. */
+  /// Sets the valid state of the drawers.
+  void _setDrawersValid(bool valid) {
+    sidenavs.forEach((sidenav) {
+      sidenav.valid = valid;
+    });
+    if (!valid) {
+      _start = _end = _left = _right = null;
+    }
+  }
+
+  /// Validate the state of the sidenav children components.
   void _validateDrawers() {
-    _start = null;
-    _end = null;
+    _start = _end = null;
 
     // Ensure that we have at most one start and one end sidenav.
-    sidenavs.forEach((MdSidenav sidenav) {
+    for (MdSidenav sidenav in sidenavs) {
       if (sidenav.align == 'end') {
-        if (_end != null) throw new MdDuplicatedSidenavError('end');
+        if (_end != null) {
+          _setDrawersValid(false);
+          return;
+        }
         _end = sidenav;
       } else {
-        if (_start != null) throw new MdDuplicatedSidenavError('start');
+        if (_start != null) {
+          _setDrawersValid(false);
+          return;
+        }
         _start = sidenav;
       }
-    });
-    _right = null;
-    _left = null;
+    }
+
+    _right = _left = null;
 
     // Detect if we're LTR or RTL.
     if (_dir == null || _dir.value == 'ltr') {
@@ -310,6 +362,8 @@ class MdSidenavLayout implements AfterContentInit {
       _left = _end;
       _right = _start;
     }
+    
+    _setDrawersValid(true);
   }
 
   void closeModalSidenav() {

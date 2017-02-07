@@ -1,5 +1,5 @@
 import 'dart:async';
-import "package:angular2/core.dart";
+import "package:angular2/angular2.dart";
 import "portal.dart";
 
 /**
@@ -26,7 +26,7 @@ class TemplatePortalDirective extends TemplatePortal {
  * <template portalHost="greeting"></template>
  */
 @Directive(selector: "[portalHost]", inputs: const ["portal: portalHost"])
-class PortalHostDirective extends BasePortalHost {
+class PortalHostDirective extends BasePortalHost implements OnDestroy {
   ComponentResolver _componentResolver;
   ViewContainerRef _viewContainerRef;
 
@@ -41,6 +41,11 @@ class PortalHostDirective extends BasePortalHost {
     _replaceAttachedPortal(p);
   }
 
+  @override
+  void ngOnDestroy() {
+    dispose();
+  }
+
   /// Attach the given ComponentPortal to this PortalHost using the ComponentResolver.
   @override
   Future<ComponentRef> attachComponentPortal(ComponentPortal portal) async {
@@ -53,8 +58,10 @@ class PortalHostDirective extends BasePortalHost {
 
     var componentFactory =
         await _componentResolver.resolveComponent(portal.component);
-    var ref = viewContainerRef.createComponent(componentFactory,
-        viewContainerRef.length, portal.injector ?? viewContainerRef.parentInjector);
+    var ref = viewContainerRef.createComponent(
+        componentFactory,
+        viewContainerRef.length,
+        portal.injector ?? viewContainerRef.parentInjector);
 
     setDisposeFn(() => ref.destroy());
     return ref;

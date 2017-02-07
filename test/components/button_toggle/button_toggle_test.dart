@@ -1,6 +1,6 @@
 //import 'dart:html';
 
-//import 'package:angular2/core.dart';
+//import 'package:angular2/angular2.dart';
 //
 //import 'package:angular2/platform/browser.dart';
 //import 'package:angular2_testing/angular2_testing.dart';
