@@ -4,7 +4,7 @@ import 'ripple/ripple.dart';
 import 'portal/portal_directives.dart';
 import 'overlay/overlay_directives.dart';
 import 'overlay/overlay.dart';
-import "a11y/live_announcer.dart" show a11yProviders;
+import "a11y/live_announcer.dart" show a11yProviders, MdLiveAnnouncer;
 import "coordination/unique_selection_dispatcher.dart";
 
 // TODO(ntaoo): export LayoutDirection.
@@ -24,7 +24,7 @@ export "overlay/position/connected_position.dart";
 export "overlay/position/connected_position_strategy.dart";
 export "ripple/ripple.dart" show MD_RIPPLE_DIRECTIVES, MdRipple;
 //export "gestures/MdGestureConfig.dart";
-export "a11y/live_announcer.dart" show a11yProviders, MdLiveAnnouncer;
+export "a11y/live_announcer.dart" show a11yProviders, MdLiveAnnouncer, AriaLivePoliteness;
 export "a11y/fake_mousedown.dart";
 
 export "coordination/unique_selection_dispatcher.dart"

@@ -1,0 +1,1 @@
+/// The extendObject function is not ported since it doesn't make sense in Dart.

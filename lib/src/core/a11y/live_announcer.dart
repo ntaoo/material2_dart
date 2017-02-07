@@ -11,6 +11,9 @@ const List a11yProviders = const <dynamic>[
 const OpaqueToken LIVE_ANNOUNCER_ELEMENT_TOKEN =
     const OpaqueToken("mdLiveAnnouncerElement");
 
+/// Possible politeness levels.
+enum AriaLivePoliteness { off, polite, assertive }
+
 @Injectable()
 class MdLiveAnnouncer {
   Element _liveElement;
